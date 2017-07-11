@@ -5,7 +5,7 @@
          :class="itemClass"
          :style="itemStyle"
          @mousedown="handleMouseDown">
-      <div v-if="!gridSettings.layout.hideOnWork || !resizing">
+      <div v-show="!gridSettings.layout.hideOnWork || !resizing" class="grid-item-content">
         <slot></slot>
       </div>
       <div class="__resize-handle" v-show="gridSettings.layout.editMode"></div>
@@ -225,6 +225,10 @@
     position: absolute;
     background-color: #fff;
     box-sizing: border-box;
+    .grid-item-content {
+      width: 100%;
+      height: 100%;
+    }
     .__resize-handle {
       position: absolute;
       width: 20px;
