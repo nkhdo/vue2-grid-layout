@@ -1,5 +1,6 @@
 <template>
   <div>
+    <div class="ghost" v-show="working" :style="ghostBoxStyle"></div>
     <div class="grid-item"
          :class="itemClass"
          :style="itemStyle"
@@ -7,11 +8,8 @@
       <div v-if="!gridSettings.layout.hideOnWork || !resizing">
         <slot></slot>
       </div>
-      <div class="resize-handle" v-show="gridSettings.layout.editMode" @mousedown.stop="handleResizeMouseDown"></div>
+      <div class="__resize-handle" v-show="gridSettings.layout.editMode"></div>
     </div>
-    <transition name="fade">
-      <div class="ghost" v-show="working" :style="ghostBoxStyle"></div>
-    </transition>
   </div>
 </template>
 
@@ -27,6 +25,10 @@
         validator (val) {
           return _.isNumber(val.x) && _.isNumber(val.y) && _.isNumber(val.w) && _.isNumber(val.h) && !_.isNil(val.id);
         }
+      },
+      dragHandleClass: {
+        type: String,
+        required: false
       }
     },
     inject: ['gridSettings'],
@@ -50,26 +52,27 @@
     },
     methods: {
       resetMouseData (e) {
-        this.mouseData.startX = e.x + window.scrollX;
-        this.mouseData.startY = e.y + window.scrollY;
-        this.mouseData.currentX = e.x + window.scrollX;
-        this.mouseData.currentY = e.y + window.scrollY;
+        this.mouseData.startX = e.x + this.gridSettings.layout.scrollX;
+        this.mouseData.startY = e.y + this.gridSettings.layout.scrollY;
+        this.mouseData.currentX = e.x + this.gridSettings.layout.scrollX;
+        this.mouseData.currentY = e.y + this.gridSettings.layout.scrollY;
       },
       handleMouseDown (e) {
         if (!this.gridSettings.layout.editMode) {
           return;
         }
-        this.dragging = true;
-        this.gridSettings.layout.startWorking();
-        this.resetMouseData(e);
-      },
-      handleResizeMouseDown (e) {
-        if (!this.gridSettings.layout.editMode) {
+        const targetClassList = e.target.classList;
+        if (_.includes(targetClassList, '__resize-handle')) {
+          this.resizing = true;
+          this.gridSettings.layout.startWorking();
+          this.resetMouseData(e);
           return;
         }
-        this.resizing = true;
-        this.gridSettings.layout.startWorking();
-        this.resetMouseData(e);
+        if (!this.dragHandleClass || _.includes(targetClassList, this.dragHandleClass)) {
+          this.dragging = true;
+          this.gridSettings.layout.startWorking();
+          this.resetMouseData(e);
+        }
       },
       handleMouseUp () {
         if (!this.gridSettings.layout.editMode || !(this.dragging || this.resizing)) {
@@ -95,8 +98,8 @@
           return;
         }
         if (this.resizing) {
-          this.mouseData.currentX = e.x + window.scrollX;
-          this.mouseData.currentY = e.y + window.scrollY;
+          this.mouseData.currentX = e.x + this.gridSettings.layout.scrollX;
+          this.mouseData.currentY = e.y + this.gridSettings.layout.scrollY;
           const deltaX = Math.round((this.mouseData.currentX - this.mouseData.startX) / (this.gridSettings.cellSize + this.gridSettings.spacing));
           const deltaY = Math.round((this.mouseData.currentY - this.mouseData.startY) / (this.gridSettings.cellSize + this.gridSettings.spacing));
           const suggested = this.gridSettings.layout.suggestResizePos(this.item.id, {
@@ -107,8 +110,8 @@
             this.ghost = suggested;
           }
         } else if (this.dragging) {
-          this.mouseData.currentX = e.x + window.scrollX;
-          this.mouseData.currentY = e.y + window.scrollY;
+          this.mouseData.currentX = e.x + this.gridSettings.layout.scrollX;
+          this.mouseData.currentY = e.y + this.gridSettings.layout.scrollY;
           const deltaX = Math.round((this.mouseData.currentX - this.mouseData.startX) / (this.gridSettings.cellSize + this.gridSettings.spacing));
           const deltaY = Math.round((this.mouseData.currentY - this.mouseData.startY) / (this.gridSettings.cellSize + this.gridSettings.spacing));
           const suggested = this.gridSettings.layout.suggestDragPos(this.item.id, {
@@ -222,8 +225,7 @@
     position: absolute;
     background-color: #fff;
     box-sizing: border-box;
-    z-index: 10;
-    .resize-handle {
+    .__resize-handle {
       position: absolute;
       width: 20px;
       height: 20px;
@@ -237,14 +239,16 @@
       box-sizing: border-box;
       cursor: se-resize;
       z-index: 100;
+      visibility: hidden;
     }
-    &.edit {
-      cursor: move;
+    &:hover {
+      .__resize-handle {
+        visibility: visible;
+      }
     }
   }
   .ghost {
     position: absolute;
-    z-index: 9;
     background-color: #ddd;
   }
 </style>

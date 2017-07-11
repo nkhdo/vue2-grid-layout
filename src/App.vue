@@ -18,10 +18,7 @@
 </template>
 
 <script>
-  import LayoutManager from './lib/layout_manager';
-
-  import gridLayout from './components/grid_layout.vue';
-  import gridItem from './components/grid_item.vue';
+  import { LayoutManager, gridLayout, gridItem } from '../index';
 
   export default {
     name: 'app',

@@ -1,13 +1,13 @@
 {
   "name": "vue2-grid-layout",
   "description": "Vue 2 grid layout",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "Hoang Do <hoang.do@holistics.io>",
   "repository" : {
     "type" : "git",
     "url" : "https://github.com/nkhdo/vue2-grid-layout.git"
   },
-  "main": "dist/index.min.js",
+  "main": "./index.js",
   "scripts": {
     "dev": "cross-env NODE_ENV=development webpack-dev-server --open --hot",
     "build": "cross-env NODE_ENV=production webpack --progress --hide-modules"

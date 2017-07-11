@@ -1,10 +1,10 @@
 <template>
   <div class="grid-container" v-resize:debounce="handleResize" :style="gridStyle" :class="gridClass">
-    <div class="items">
-      <slot></slot>
-    </div>
     <div v-for="r in layoutManager.rows" v-show="layoutManager.isWorking">
       <div v-for="c in layoutManager.cols" class="cell" :style="cellStyle(r, c)"></div>
+    </div>
+    <div class="items">
+      <slot></slot>
     </div>
   </div>
 </template>
@@ -96,7 +96,6 @@
       position: absolute;
       box-sizing: border-box;
       border: 1px solid #ccc;
-      z-index: 5;
     }
   }
 </style>

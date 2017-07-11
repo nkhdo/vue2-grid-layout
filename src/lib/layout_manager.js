@@ -1,7 +1,7 @@
 import _ from 'lodash';
 
 export default class LayoutManager {
-  constructor (items, { cols = 12, editModeRows = 12, minW = 1, minH = 1, hideOnWork = false }) {
+  constructor (items, { cols = 12, editModeRows = 12, minW = 1, minH = 1, hideOnWork = false, scrollBody = null }) {
     this.items = [];
     this.editMode = false;
 
@@ -9,6 +9,11 @@ export default class LayoutManager {
     this.minW = minW;
     this.minH = minH;
     this.hideOnWork = hideOnWork;
+    this.scrollBody = scrollBody;
+
+    if (!_.isNil(this.scrollBody) && !_.isElement(this.scrollBody)) {
+       throw new Error('scrollBody must be a DOM element');
+    }
 
     this.editModeRows = editModeRows;
 
@@ -96,11 +101,10 @@ export default class LayoutManager {
       h: Math.max(this.minH, h)
     };
 
-    this._workingPeak = suggested.y + suggested.h;
-
     if (_.some(this.items, item => item.id !== itemId && LayoutManager.checkCollision(item, suggested))) {
       return null;
     }
+    this._workingPeak = suggested.y + suggested.h;
     return suggested;
   }
 
@@ -115,11 +119,10 @@ export default class LayoutManager {
       h: item.h
     };
 
-    this._workingPeak = suggested.y + suggested.h;
-
     if (_.some(this.items, item => item.id !== itemId && LayoutManager.checkCollision(item, suggested))) {
       return null;
     }
+    this._workingPeak = suggested.y + suggested.h;
     return suggested;
   }
 
@@ -133,22 +136,30 @@ export default class LayoutManager {
   }
 
   get maxRows () {
-    return _.max(_.map(this.items, item => item.y + item.h)) || 0;
+    return _.max(_.map(this.items, item => item.y + item.h));
   }
 
   get rows () {
     let rs = this.maxRows;
     if (this.editMode) {
-      rs = Math.max(rs + 2, this.editModeRows);
+      rs = Math.max(rs, this.editModeRows);
     }
     if (this._working) {
-      return Math.max(rs, this._workingPeak) + 2;
+      return Math.max(rs, this._workingPeak) + 3;
     }
     return rs || 1;
   }
 
   get isWorking () {
     return this._working;
+  }
+
+  get scrollX () {
+    return this.scrollBody ? this.scrollBody.scrollLeft : window.scrollX;
+  }
+
+  get scrollY () {
+    return this.scrollBody ? this.scrollBody.scrollTop : window.scrollY;
   }
 
   static checkCollision (rect1, rect2) {
