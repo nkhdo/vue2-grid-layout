@@ -362,27 +362,27 @@
       }
       &.n {
         width: 100%;
-        height: 15px;
+        height: 10px;
         top: -3px;
         left: 0;
         cursor: n-resize;
       }
       &.s {
         width: 100%;
-        height: 15px;
+        height: 10px;
         bottom: -3px;
         left: 0;
         cursor: s-resize;
       }
       &.e {
-        width: 15px;
+        width: 10px;
         height: 100%;
         top: 0;
         right: -3px;
         cursor: e-resize;
       }
       &.w {
-        width: 15px;
+        width: 10px;
         height: 100%;
         top: 0;
         left: -3px;

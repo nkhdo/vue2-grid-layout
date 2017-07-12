@@ -109,23 +109,25 @@ export default class LayoutManager {
     const item = this.getItemById(itemId);
     if (!item) return;
 
-    const suggested = {
-      w: Math.max(this.minW, Math.min(w, this.cols)),
-      h: Math.max(this.minH, h)
-    };
+    const suggested = {};
 
     if (item.x === x) {
       suggested.x = x;
+      suggested.w = Math.max(this.minW, Math.min(w, this.cols - suggested.x));
     } else {
       const maxX = item.x + item.w - this.minW;
       suggested.x = Math.max(0, Math.min(x, maxX));
+      suggested.w = Math.max(this.minW, Math.min(w, item.x + item.w));
     }
 
     if (item.y === y) {
       suggested.y = y;
+      suggested.h = Math.max(this.minH, h);
     } else {
       const maxY = item.y + item.h - this.minH;
       suggested.y = Math.max(0, Math.min(y, maxY));
+      suggested.h = Math.max(this.minH, Math.min(h, item.y + item.h));
+
     }
 
     if (_.some(this.items, item => item.id !== itemId && LayoutManager.checkCollision(item, suggested))) {
