@@ -105,16 +105,28 @@ export default class LayoutManager {
     return suggested;
   }
 
-  suggestResizePos (itemId, { w, h }) {
+  suggestResizePos (itemId, { x, y, w, h }) {
     const item = this.getItemById(itemId);
     if (!item) return;
 
     const suggested = {
-      x: item.x,
-      y: item.y,
-      w: Math.max(this.minW, Math.min(w, this.cols - item.x)),
+      w: Math.max(this.minW, Math.min(w, this.cols)),
       h: Math.max(this.minH, h)
     };
+
+    if (item.x === x) {
+      suggested.x = x;
+    } else {
+      const maxX = item.x + item.w - this.minW;
+      suggested.x = Math.max(0, Math.min(x, maxX));
+    }
+
+    if (item.y === y) {
+      suggested.y = y;
+    } else {
+      const maxY = item.y + item.h - this.minH;
+      suggested.y = Math.max(0, Math.min(y, maxY));
+    }
 
     if (_.some(this.items, item => item.id !== itemId && LayoutManager.checkCollision(item, suggested))) {
       return null;

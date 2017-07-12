@@ -4,11 +4,20 @@
     <div class="grid-item"
          :class="itemClass"
          :style="itemStyle"
-         @mousedown="handleMouseDown">
+         @mousedown.prevent="handleMouseDown">
       <div v-show="!grid.layout.hideOnWork || !working" class="grid-item-content">
         <slot></slot>
       </div>
-      <div class="__resize-handle" v-show="grid.layout.editMode"></div>
+      <div class="__resize-handles" v-show="grid.layout.editMode">
+        <div class="__resize-handle n t"></div>
+        <div class="__resize-handle s b"></div>
+        <div class="__resize-handle e r"></div>
+        <div class="__resize-handle w l"></div>
+        <div class="__resize-handle nw t l"></div>
+        <div class="__resize-handle ne t r"></div>
+        <div class="__resize-handle sw b l"></div>
+        <div class="__resize-handle se b r"></div>
+      </div>
     </div>
   </div>
 </template>
@@ -47,15 +56,21 @@
           startY: null,
           currentX: null,
           currentY: null
+        },
+        resizeData: {
+          top: false,
+          bottom: false,
+          left: false,
+          right: false
         }
       }
     },
     methods: {
       resetMouseData (e) {
-        this.mouseData.startX = e.x + this.grid.layout.scrollX;
-        this.mouseData.startY = e.y + this.grid.layout.scrollY;
-        this.mouseData.currentX = e.x + this.grid.layout.scrollX;
-        this.mouseData.currentY = e.y + this.grid.layout.scrollY;
+        this.mouseData.startX = e.clientX + this.grid.layout.scrollX;
+        this.mouseData.startY = e.clientY + this.grid.layout.scrollY;
+        this.mouseData.currentX = e.clientX + this.grid.layout.scrollX;
+        this.mouseData.currentY = e.clientY + this.grid.layout.scrollY;
       },
       handleMouseDown (e) {
         if (!this.grid.layout.editMode) {
@@ -64,6 +79,18 @@
         const targetClassList = e.target.classList;
         if (_.includes(targetClassList, '__resize-handle')) {
           this.resizing = true;
+          if (_.includes(targetClassList, 't')) {
+            this.resizeData.top = true;
+          }
+          if (_.includes(targetClassList, 'b')) {
+            this.resizeData.bottom = true;
+          }
+          if (_.includes(targetClassList, 'l')) {
+            this.resizeData.left = true;
+          }
+          if (_.includes(targetClassList, 'r')) {
+            this.resizeData.right = true;
+          }
           this.grid.layout.startWorking();
           this.resetMouseData(e);
           return;
@@ -80,12 +107,20 @@
         }
         this.dragging = false;
         this.resizing = false;
-        this.grid.layout.setLayout(this.item.id, this.ghost);
+        this.resizeData = {
+          top: false,
+          bottom: false,
+          left: false,
+          right: false
+        };
         this.grid.layout.stopWorking();
-        this.$emit('layout:updated', {
-          id: this.item.id,
-          layout: this.ghost
-        });
+        if (this.isLayoutChanged) {
+          this.grid.layout.setLayout(this.item.id, this.ghost);
+          this.$emit('layout:updated', {
+            id: this.item.id,
+            layout: this.ghost
+          });
+        }
       },
       handleMouseMove (e) {
         if (e.preventDefault) {
@@ -95,20 +130,44 @@
           return;
         }
         if (this.resizing) {
-          this.mouseData.currentX = e.x + this.grid.layout.scrollX;
-          this.mouseData.currentY = e.y + this.grid.layout.scrollY;
-          const deltaX = Math.round((this.mouseData.currentX - this.mouseData.startX) / (this.grid.cellSize + this.grid.layout.margin));
-          const deltaY = Math.round((this.mouseData.currentY - this.mouseData.startY) / (this.grid.cellSize + this.grid.layout.margin));
-          const suggested = this.grid.layout.suggestResizePos(this.item.id, {
-            w: this.item.w + deltaX,
-            h: this.item.h + deltaY
-          });
+          this.mouseData.currentX = e.clientX + this.grid.layout.scrollX;
+          this.mouseData.currentY = e.clientY + this.grid.layout.scrollY;
+
+          let deltaX = Math.round((this.mouseData.currentX - this.mouseData.startX) / (this.grid.cellSize + this.grid.layout.margin));
+          let deltaY = Math.round((this.mouseData.currentY - this.mouseData.startY) / (this.grid.cellSize + this.grid.layout.margin));
+
+          let { x, y, w, h } = this.item;
+          if (this.resizeData.top) {
+            if (deltaY > h) {
+              y += h;
+              h = 0
+            } else {
+              y += deltaY;
+              h -= deltaY;
+            }
+          }
+          if (this.resizeData.left) {
+            if (deltaX > w) {
+              x += w;
+              w = 0
+            } else {
+              x += deltaX;
+              w -= deltaX;
+            }
+          }
+          if (this.resizeData.bottom) {
+            h += deltaY;
+          }
+          if (this.resizeData.right) {
+            w += deltaX;
+          }
+          const suggested = this.grid.layout.suggestResizePos(this.item.id, { x, y, w, h });
           if (!!suggested) {
             this.ghost = suggested;
           }
         } else if (this.dragging) {
-          this.mouseData.currentX = e.x + this.grid.layout.scrollX;
-          this.mouseData.currentY = e.y + this.grid.layout.scrollY;
+          this.mouseData.currentX = e.clientX + this.grid.layout.scrollX;
+          this.mouseData.currentY = e.clientY + this.grid.layout.scrollY;
           const deltaX = Math.round((this.mouseData.currentX - this.mouseData.startX) / (this.grid.cellSize + this.grid.layout.margin));
           const deltaY = Math.round((this.mouseData.currentY - this.mouseData.startY) / (this.grid.cellSize + this.grid.layout.margin));
           const suggested = this.grid.layout.suggestDragPos(this.item.id, {
@@ -139,6 +198,9 @@
         } else {
           delete el['on' + event];
         }
+      },
+      isLayoutChanged () {
+        return !(this.item.x === this.ghost.x && this.item.y === this.ghost.y && this.item.w === this.ghost.w && this.item.h === this.ghost.h);
       }
     },
     mounted () {
@@ -183,11 +245,44 @@
         }
       },
       resizingBoxStyle () {
+        const deltaX = this.mouseData.currentX - this.mouseData.startX;
+        const deltaY = this.mouseData.currentY - this.mouseData.startY;
+
+        let top = this.top,
+            left = this.left,
+            width = this.width,
+            height = this.height;
+
+        if (this.resizeData.top) {
+          if (deltaY > height) {
+            top += height;
+            height = 0;
+          } else {
+            top += deltaY;
+            height -= deltaY;
+          }
+        }
+        if (this.resizeData.left) {
+          if (deltaX > width) {
+            left += width;
+            width = 0;
+          } else {
+            left += deltaX;
+            width -= deltaX;
+          }
+        }
+        if (this.resizeData.bottom) {
+          height += deltaY;
+        }
+        if (this.resizeData.right) {
+          width += deltaX;
+        }
+
         return {
-          top: this.top + 'px',
-          left: this.left + 'px',
-          width: this.width + this.mouseData.currentX - this.mouseData.startX + 'px',
-          height: this.height + this.mouseData.currentY - this.mouseData.startY + 'px',
+          top: top + 'px',
+          left: left + 'px',
+          width: width + 'px',
+          height: height + 'px',
           'z-index': 11
         }
       },
@@ -229,19 +324,70 @@
     }
     .__resize-handle {
       position: absolute;
-      width: 20px;
-      height: 20px;
-      bottom: -7px;
-      right: -7px;
-      background: url('data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBzdGFuZGFsb25lPSJubyI/Pg08IS0tIEdlbmVyYXRvcjogQWRvYmUgRmlyZXdvcmtzIENTNiwgRXhwb3J0IFNWRyBFeHRlbnNpb24gYnkgQWFyb24gQmVhbGwgKGh0dHA6Ly9maXJld29ya3MuYWJlYWxsLmNvbSkgLiBWZXJzaW9uOiAwLjYuMSAgLS0+DTwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIgImh0dHA6Ly93d3cudzMub3JnL0dyYXBoaWNzL1NWRy8xLjEvRFREL3N2ZzExLmR0ZCI+DTxzdmcgaWQ9IlVudGl0bGVkLVBhZ2UlMjAxIiB2aWV3Qm94PSIwIDAgNiA2IiBzdHlsZT0iYmFja2dyb3VuZC1jb2xvcjojZmZmZmZmMDAiIHZlcnNpb249IjEuMSINCXhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHhtbDpzcGFjZT0icHJlc2VydmUiDQl4PSIwcHgiIHk9IjBweCIgd2lkdGg9IjZweCIgaGVpZ2h0PSI2cHgiDT4NCTxnIG9wYWNpdHk9IjAuMzAyIj4NCQk8cGF0aCBkPSJNIDYgNiBMIDAgNiBMIDAgNC4yIEwgNCA0LjIgTCA0LjIgNC4yIEwgNC4yIDAgTCA2IDAgTCA2IDYgTCA2IDYgWiIgZmlsbD0iIzAwMDAwMCIvPg0JPC9nPg08L3N2Zz4=');
-      background-position: bottom right;
-      padding: 0 10px 10px 0;
-      background-repeat: no-repeat;
-      background-origin: content-box;
-      box-sizing: border-box;
-      cursor: se-resize;
       z-index: 100;
+      box-sizing: border-box;
       visibility: hidden;
+      &.se {
+        width: 15px;
+        height: 15px;
+        bottom: -3px;
+        right: -3px;
+        background: url('data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBzdGFuZGFsb25lPSJubyI/Pg08IS0tIEdlbmVyYXRvcjogQWRvYmUgRmlyZXdvcmtzIENTNiwgRXhwb3J0IFNWRyBFeHRlbnNpb24gYnkgQWFyb24gQmVhbGwgKGh0dHA6Ly9maXJld29ya3MuYWJlYWxsLmNvbSkgLiBWZXJzaW9uOiAwLjYuMSAgLS0+DTwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIgImh0dHA6Ly93d3cudzMub3JnL0dyYXBoaWNzL1NWRy8xLjEvRFREL3N2ZzExLmR0ZCI+DTxzdmcgaWQ9IlVudGl0bGVkLVBhZ2UlMjAxIiB2aWV3Qm94PSIwIDAgNiA2IiBzdHlsZT0iYmFja2dyb3VuZC1jb2xvcjojZmZmZmZmMDAiIHZlcnNpb249IjEuMSINCXhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHhtbDpzcGFjZT0icHJlc2VydmUiDQl4PSIwcHgiIHk9IjBweCIgd2lkdGg9IjZweCIgaGVpZ2h0PSI2cHgiDT4NCTxnIG9wYWNpdHk9IjAuMzAyIj4NCQk8cGF0aCBkPSJNIDYgNiBMIDAgNiBMIDAgNC4yIEwgNCA0LjIgTCA0LjIgNC4yIEwgNC4yIDAgTCA2IDAgTCA2IDYgTCA2IDYgWiIgZmlsbD0iIzAwMDAwMCIvPg0JPC9nPg08L3N2Zz4=');
+        background-position: bottom right;
+        padding: 0 6px 6px 0;
+        background-repeat: no-repeat;
+        background-origin: content-box;
+        cursor: se-resize;
+      }
+      &.ne {
+        width: 15px;
+        height: 15px;
+        top: -3px;
+        right: -3px;
+        cursor: ne-resize;
+      }
+      &.nw {
+        width: 15px;
+        height: 15px;
+        top: -3px;
+        left: -3px;
+        cursor: nw-resize;
+      }
+      &.sw {
+        width: 15px;
+        height: 15px;
+        bottom: -3px;
+        left: -3px;
+        cursor: sw-resize;
+      }
+      &.n {
+        width: 100%;
+        height: 15px;
+        top: -3px;
+        left: 0;
+        cursor: n-resize;
+      }
+      &.s {
+        width: 100%;
+        height: 15px;
+        bottom: -3px;
+        left: 0;
+        cursor: s-resize;
+      }
+      &.e {
+        width: 15px;
+        height: 100%;
+        top: 0;
+        right: -3px;
+        cursor: e-resize;
+      }
+      &.w {
+        width: 15px;
+        height: 100%;
+        top: 0;
+        left: -3px;
+        cursor: w-resize;
+      }
     }
     &:hover {
       .__resize-handle {
