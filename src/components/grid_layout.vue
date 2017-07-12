@@ -1,7 +1,9 @@
 <template>
   <div class="grid-container" v-resize:debounce="handleResize" :style="gridStyle" :class="gridClass">
-    <div v-for="r in layoutManager.rows" v-show="layoutManager.isWorking">
-      <div v-for="c in layoutManager.cols" class="cell" :style="cellStyle(r, c)"></div>
+    <div class="cells" v-show="layoutManager.isWorking">
+      <template v-for="r in layoutManager.rows">
+        <div v-for="c in layoutManager.cols" class="cell" :style="cellStyle(r, c)"></div>
+      </template>
     </div>
     <div class="items">
       <slot></slot>
@@ -15,11 +17,6 @@
   export default {
     name: 'gridLayout',
     props: {
-      spacing: {
-        type: Number,
-        required: false,
-        'default': 10
-      },
       layoutManager: {
         type: Object,
         required: true
@@ -29,20 +26,16 @@
       resize
     },
     provide () {
-      const gridSettings = {};
-      Object.defineProperty(gridSettings, 'spacing', {
-        enumerable: true,
-        get: () => this.spacing
-      });
-      Object.defineProperty(gridSettings, 'cellSize', {
+      const grid = {};
+      Object.defineProperty(grid, 'cellSize', {
         enumerable: true,
         get: () => this.cellSize
       });
-      Object.defineProperty(gridSettings, 'layout', {
+      Object.defineProperty(grid, 'layout', {
         enumerable: true,
         get: () => this.layoutManager
       });
-      return { gridSettings }
+      return { grid }
     },
     data () {
       return {
@@ -53,7 +46,7 @@
       gridStyle () {
         const rows = this.layoutManager.rows;
         return {
-          height: rows * this.cellSize + (rows + 1) * this.spacing + 'px',
+          height: rows * this.cellSize + (rows + 1) * this.layoutManager.margin + 'px',
           width: '100%'
         };
       },
@@ -68,12 +61,12 @@
         this.calcCellSize();
       },
       calcCellSize () {
-        this.cellSize = (this.$el.clientWidth - this.spacing * (this.layoutManager.cols +1)) / this.layoutManager.cols;
+        this.cellSize = (this.$el.clientWidth - this.layoutManager.margin * (this.layoutManager.cols +1)) / this.layoutManager.cols;
       },
       cellStyle (r, c) {
         const wh = this.cellSize + 'px';
-        const top = (r - 1) * (this.cellSize + this.spacing) + this.spacing + 'px';
-        const left = (c - 1) * (this.cellSize + this.spacing) + this.spacing + 'px';
+        const top = (r - 1) * (this.cellSize + this.layoutManager.margin) + this.layoutManager.margin + 'px';
+        const left = (c - 1) * (this.cellSize + this.layoutManager.margin) + this.layoutManager.margin + 'px';
         return {
           width: wh,
           height: wh,

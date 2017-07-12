@@ -5,10 +5,10 @@
          :class="itemClass"
          :style="itemStyle"
          @mousedown="handleMouseDown">
-      <div v-show="!gridSettings.layout.hideOnWork || !resizing" class="grid-item-content">
+      <div v-show="!grid.layout.hideOnWork || !working" class="grid-item-content">
         <slot></slot>
       </div>
-      <div class="__resize-handle" v-show="gridSettings.layout.editMode"></div>
+      <div class="__resize-handle" v-show="grid.layout.editMode"></div>
     </div>
   </div>
 </template>
@@ -31,7 +31,7 @@
         required: false
       }
     },
-    inject: ['gridSettings'],
+    inject: ['grid'],
     data () {
       return {
         dragging: false,
@@ -52,57 +52,54 @@
     },
     methods: {
       resetMouseData (e) {
-        this.mouseData.startX = e.x + this.gridSettings.layout.scrollX;
-        this.mouseData.startY = e.y + this.gridSettings.layout.scrollY;
-        this.mouseData.currentX = e.x + this.gridSettings.layout.scrollX;
-        this.mouseData.currentY = e.y + this.gridSettings.layout.scrollY;
+        this.mouseData.startX = e.x + this.grid.layout.scrollX;
+        this.mouseData.startY = e.y + this.grid.layout.scrollY;
+        this.mouseData.currentX = e.x + this.grid.layout.scrollX;
+        this.mouseData.currentY = e.y + this.grid.layout.scrollY;
       },
       handleMouseDown (e) {
-        if (!this.gridSettings.layout.editMode) {
+        if (!this.grid.layout.editMode) {
           return;
         }
         const targetClassList = e.target.classList;
         if (_.includes(targetClassList, '__resize-handle')) {
           this.resizing = true;
-          this.gridSettings.layout.startWorking();
+          this.grid.layout.startWorking();
           this.resetMouseData(e);
           return;
         }
         if (!this.dragHandleClass || _.includes(targetClassList, this.dragHandleClass)) {
           this.dragging = true;
-          this.gridSettings.layout.startWorking();
+          this.grid.layout.startWorking();
           this.resetMouseData(e);
         }
       },
       handleMouseUp () {
-        if (!this.gridSettings.layout.editMode || !(this.dragging || this.resizing)) {
+        if (!this.grid.layout.editMode || !(this.dragging || this.resizing)) {
           return;
         }
         this.dragging = false;
         this.resizing = false;
-        this.gridSettings.layout.setLayout(this.item.id, this.ghost);
-        this.gridSettings.layout.stopWorking();
+        this.grid.layout.setLayout(this.item.id, this.ghost);
+        this.grid.layout.stopWorking();
         this.$emit('layout:updated', {
           id: this.item.id,
           layout: this.ghost
         });
       },
       handleMouseMove (e) {
-        if (e.stopPropagation) {
-          e.stopPropagation();
-        }
         if (e.preventDefault) {
           e.preventDefault();
         }
-        if (!this.gridSettings.layout.editMode) {
+        if (!this.grid.layout.editMode) {
           return;
         }
         if (this.resizing) {
-          this.mouseData.currentX = e.x + this.gridSettings.layout.scrollX;
-          this.mouseData.currentY = e.y + this.gridSettings.layout.scrollY;
-          const deltaX = Math.round((this.mouseData.currentX - this.mouseData.startX) / (this.gridSettings.cellSize + this.gridSettings.spacing));
-          const deltaY = Math.round((this.mouseData.currentY - this.mouseData.startY) / (this.gridSettings.cellSize + this.gridSettings.spacing));
-          const suggested = this.gridSettings.layout.suggestResizePos(this.item.id, {
+          this.mouseData.currentX = e.x + this.grid.layout.scrollX;
+          this.mouseData.currentY = e.y + this.grid.layout.scrollY;
+          const deltaX = Math.round((this.mouseData.currentX - this.mouseData.startX) / (this.grid.cellSize + this.grid.layout.margin));
+          const deltaY = Math.round((this.mouseData.currentY - this.mouseData.startY) / (this.grid.cellSize + this.grid.layout.margin));
+          const suggested = this.grid.layout.suggestResizePos(this.item.id, {
             w: this.item.w + deltaX,
             h: this.item.h + deltaY
           });
@@ -110,11 +107,11 @@
             this.ghost = suggested;
           }
         } else if (this.dragging) {
-          this.mouseData.currentX = e.x + this.gridSettings.layout.scrollX;
-          this.mouseData.currentY = e.y + this.gridSettings.layout.scrollY;
-          const deltaX = Math.round((this.mouseData.currentX - this.mouseData.startX) / (this.gridSettings.cellSize + this.gridSettings.spacing));
-          const deltaY = Math.round((this.mouseData.currentY - this.mouseData.startY) / (this.gridSettings.cellSize + this.gridSettings.spacing));
-          const suggested = this.gridSettings.layout.suggestDragPos(this.item.id, {
+          this.mouseData.currentX = e.x + this.grid.layout.scrollX;
+          this.mouseData.currentY = e.y + this.grid.layout.scrollY;
+          const deltaX = Math.round((this.mouseData.currentX - this.mouseData.startX) / (this.grid.cellSize + this.grid.layout.margin));
+          const deltaY = Math.round((this.mouseData.currentY - this.mouseData.startY) / (this.grid.cellSize + this.grid.layout.margin));
+          const suggested = this.grid.layout.suggestDragPos(this.item.id, {
             x: this.item.x + deltaX,
             y: this.item.y + deltaY
           });
@@ -157,16 +154,16 @@
         return this.dragging || this.resizing;
       },
       top () {
-        return this.item.y * (this.gridSettings.cellSize + this.gridSettings.spacing) + this.gridSettings.spacing;
+        return this.item.y * (this.grid.cellSize + this.grid.layout.margin) + this.grid.layout.margin;
       },
       left () {
-        return this.item.x * (this.gridSettings.cellSize + this.gridSettings.spacing) + this.gridSettings.spacing;
+        return this.item.x * (this.grid.cellSize + this.grid.layout.margin) + this.grid.layout.margin;
       },
       width () {
-        return this.item.w * (this.gridSettings.cellSize + this.gridSettings.spacing) - this.gridSettings.spacing;
+        return this.item.w * (this.grid.cellSize + this.grid.layout.margin) - this.grid.layout.margin;
       },
       height () {
-        return this.item.h * (this.gridSettings.cellSize + this.gridSettings.spacing) - this.gridSettings.spacing;
+        return this.item.h * (this.grid.cellSize + this.grid.layout.margin) - this.grid.layout.margin;
       },
       boxStyle () {
         return {
@@ -196,10 +193,10 @@
       },
       ghostBoxStyle () {
         return {
-          top: this.ghost.y * (this.gridSettings.cellSize + this.gridSettings.spacing) + this.gridSettings.spacing + 'px',
-          left: this.ghost.x * (this.gridSettings.cellSize + this.gridSettings.spacing) + this.gridSettings.spacing + 'px',
-          width: this.ghost.w * (this.gridSettings.cellSize + this.gridSettings.spacing) - this.gridSettings.spacing + 'px',
-          height: this.ghost.h * (this.gridSettings.cellSize + this.gridSettings.spacing) - this.gridSettings.spacing + 'px'
+          top: this.ghost.y * (this.grid.cellSize + this.grid.layout.margin) + this.grid.layout.margin + 'px',
+          left: this.ghost.x * (this.grid.cellSize + this.grid.layout.margin) + this.grid.layout.margin + 'px',
+          width: this.ghost.w * (this.grid.cellSize + this.grid.layout.margin) - this.grid.layout.margin + 'px',
+          height: this.ghost.h * (this.grid.cellSize + this.grid.layout.margin) - this.grid.layout.margin + 'px'
         }
       },
       itemStyle () {
@@ -213,7 +210,8 @@
       },
       itemClass () {
         return {
-          edit: this.gridSettings.layout.editMode
+          edit: this.grid.layout.editMode,
+          working: this.working
         }
       }
     }
@@ -250,9 +248,13 @@
         visibility: visible;
       }
     }
+    &.working {
+      border: 1px dashed #ccc;
+    }
   }
   .ghost {
     position: absolute;
-    background-color: #ddd;
+    background-color: #ccc;
+    opacity: 0.6;
   }
 </style>

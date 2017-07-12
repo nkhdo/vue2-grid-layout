@@ -1,13 +1,22 @@
 import _ from 'lodash';
 
 export default class LayoutManager {
-  constructor (items, { cols = 12, editModeRows = 12, minW = 1, minH = 1, hideOnWork = false, scrollBody = null }) {
+  constructor (items, {
+    cols = 12,
+    editModeRows = 12,
+    minW = 1,
+    minH = 1,
+    margin = 10,
+    hideOnWork = false,
+    scrollBody = null
+  }) {
     this.items = [];
     this.editMode = false;
 
     this.cols = cols;
     this.minW = minW;
     this.minH = minH;
+    this.margin = margin;
     this.hideOnWork = hideOnWork;
     this.scrollBody = scrollBody;
 
@@ -64,10 +73,16 @@ export default class LayoutManager {
     this._working = true;
     this._workingPeak = 0;
   }
-  
+
   stopWorking () {
     this._working = false;
     this._workingPeak = 0;
+  }
+
+  setWorkingPeak (val, forced = false) {
+    if (forced || val > this._workingPeak) {
+      this._workingPeak = val;
+    }
   }
 
   getItemById (id) {
@@ -104,7 +119,7 @@ export default class LayoutManager {
     if (_.some(this.items, item => item.id !== itemId && LayoutManager.checkCollision(item, suggested))) {
       return null;
     }
-    this._workingPeak = suggested.y + suggested.h;
+    this.setWorkingPeak(suggested.y + suggested.h);
     return suggested;
   }
 
@@ -122,7 +137,7 @@ export default class LayoutManager {
     if (_.some(this.items, item => item.id !== itemId && LayoutManager.checkCollision(item, suggested))) {
       return null;
     }
-    this._workingPeak = suggested.y + suggested.h;
+    this.setWorkingPeak(suggested.y + suggested.h);
     return suggested;
   }
 
