@@ -85,6 +85,7 @@
   .grid-container {
     background-color: #eee;
     position: relative;
+    overflow-anchor: none;
     .cells, .items {
       width: 100%;
       height: 100%;
