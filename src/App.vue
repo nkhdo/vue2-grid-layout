@@ -34,7 +34,7 @@
     },
     methods: {
       handleMouseEnd (data) {
-        console.log(data);
+        // console.log(data);
       },
       addItem () {
         this.layoutManager.addItem({

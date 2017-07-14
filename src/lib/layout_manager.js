@@ -8,7 +8,8 @@ export default class LayoutManager {
     minH = 1,
     margin = 10,
     hideOnWork = false,
-    scrollBody = null
+    scrollBody = null,
+    map = null 
   }) {
     this.items = [];
     this.editMode = false;
@@ -52,11 +53,11 @@ export default class LayoutManager {
       item.h = this.minH;
     }
 
-    const suggestedPosition = this.suggestNewPos(item);
+    const suggestedPosition = this.suggestNewPosition(item);
     item.x = suggestedPosition.x;
     item.y = suggestedPosition.y;
     item.w = suggestedPosition.w;
-    item.h = suggestedPosition.h;
+    item.h = suggestedPosition.h; 
 
     this.items.push(item);
   }
@@ -89,20 +90,50 @@ export default class LayoutManager {
     return _.find(this.items, item => item.id === id);
   }
 
-  suggestNewPos ({ x, y, w, h }) {
-    const suggested = {
-      y: Math.max(0, y),
-      w: Math.max(this.minW, Math.min(w, this.cols)),
-      h: Math.max(this.minH, h)
-    };
-    // Set 'x' after 'w' is properly set
-    suggested.x = Math.max(0, Math.min(x, this.cols - suggested.w));
+  // suggestNewPos ({ x, y, w, h }) {
+  //   const suggested = {
+  //     y: Math.max(0, y),
+  //     w: Math.max(this.minW, Math.min(w, this.cols)),
+  //     h: Math.max(this.minH, h)
+  //   };
+  //   // Set 'x' after 'w' is properly set
+  //   suggested.x = Math.max(0, Math.min(x, this.cols - suggested.w));
 
-    if (_.some(this.items, item => LayoutManager.checkCollision(item, suggested))) {
-      // todo: find a better position (to fit in spaces between current items)
-      suggested.y = this.maxRows;
+  //   if (_.some(this.items, item => LayoutManager.checkCollision(item, suggested))) {
+  //     // todo: find a better position (to fit in spaces between current items)
+  //     suggested.y = this.maxRows;
+  //   }
+  //   return suggested;
+  // }
+
+  isValid(ret) {
+    var i; 
+    for (i = 0; i < this.items.length; i++) {
+      if (LayoutManager.checkCollision(ret, this.items[i])) 
+        return false; 
     }
-    return suggested;
+    return true; 
+  }
+
+  suggestNewPosition({x, y, w, h}) { 
+    const suggestion = {
+      x: 0, 
+      y: 0, 
+      w: this.minW,  
+      h: this.minH
+    } 
+    var i, j;
+    var n = this.maxRows;
+    for (y = 0; y < n; y++) 
+      for (x = 0; x < this.cols - suggestion.w + 1; x++) {
+        suggestion.y = y;  
+        suggestion.x = x; 
+        if (this.isValid(suggestion))
+          return suggestion; 
+      }
+    suggestion.x = 0;  
+    suggestion.y = n; 
+    return suggestion; 
   }
 
   suggestResizePos (itemId, { x, y, w, h }) {
@@ -165,7 +196,7 @@ export default class LayoutManager {
   }
 
   get maxRows () {
-    return _.max(_.map(this.items, item => item.y + item.h));
+    return _.max(_.map(this.items, item => item.y + item.h)) || 0;
   }
 
   get rows () {
