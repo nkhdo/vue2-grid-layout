@@ -102,7 +102,7 @@
         }
       },
       handleMouseUp () {
-        if (!this.grid.layout.editMode || !(this.dragging || this.resizing)) {
+        if (!this.grid.layout.editMode || !this.working) {
           return;
         }
         this.dragging = false;
@@ -114,7 +114,7 @@
           right: false
         };
         this.grid.layout.stopWorking();
-        if (this.isLayoutChanged) {
+        if (this.isLayoutChanged()) {
           this.grid.layout.setLayout(this.item.id, this.ghost);
           this.$emit('layout:updated', {
             id: this.item.id,
