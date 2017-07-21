@@ -8,8 +8,7 @@ export default class LayoutManager {
     minH = 1,
     margin = 10,
     hideOnWork = false,
-    scrollBody = null,
-    map = null 
+    scrollBody = null
   }) {
     this.items = [];
     this.editMode = false;

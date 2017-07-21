@@ -7,7 +7,7 @@
     "type": "git",
     "url": "https://github.com/nkhdo/vue2-grid-layout.git"
   },
-  "main": "./index.js",
+  "main": "./index.js.es6",
   "scripts": {
     "dev": "cross-env NODE_ENV=development webpack-dev-server --open --hot",
     "build": "cross-env NODE_ENV=production webpack --progress --hide-modules"
